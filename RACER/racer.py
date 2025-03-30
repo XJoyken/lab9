@@ -16,6 +16,7 @@ running = True
 
 #Variables
 SCORE = 0
+A_SCORE = 0
 SPEED = 2
 
 #Creating colors
@@ -73,15 +74,38 @@ class Player(pygame.sprite.Sprite):
 class Coin(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
-        self.image = pygame.image.load("coin.png")
-        self.image = pygame.transform.scale(self.image, (40, 40))
+        self.original_image = pygame.image.load("coin.png")
+        self.image = self.original_image
+        #self.image = pygame.transform.scale(self.image, (40, 40))
         self.rect = self.image.get_rect()
         self.active = True
         self.reappear_time = 0
+        self.size_coin = 1
         self.appear()
+    #Size of coins
+    def size(self):
+        self.size_coin = random.randint(1, 3)
+        if self.size_coin == 1:
+            new_size = (25, 25)
+        elif self.size_coin == 2:
+            new_size = (35, 35)
+        else:
+            new_size = (50, 50)
+
+        self.image = pygame.transform.scale(self.original_image, new_size)
+        self.rect = self.image.get_rect()
+        return self.image
+    #The bigger the coin, the bigger the score
+    def get_score(self):
+        if self.size_coin == 1:
+            return 1
+        elif self.size_coin == 2:
+            return 2
+        else: return 3
 
     def appear(self):
         self.active = True
+        self.size()
         self.image.set_alpha(255)
         self.rect.center = (random.randint(20, SCREEN_WIDTH - 20), 0)
 
@@ -114,18 +138,12 @@ all_sprites.add(C1)
 coins = pygame.sprite.Group()
 coins.add(C1)
 
-#Adding a new User event
-INC_SPEED = pygame.USEREVENT + 1
-pygame.time.set_timer(INC_SPEED, 10000)
-
 #Game loop
 while(running):
     # Cycles through all events occuring
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-        if event.type == INC_SPEED:
-            SPEED += 2
 
     screen.blit(background, (0, 0))
     scores = font_small.render("Score: " + str(SCORE), True, BLACK)
@@ -154,10 +172,15 @@ while(running):
         pygame.quit()
         sys.exit()
 
-    #Scoring
+    #Scoring and speeding up
     if pygame.sprite.spritecollideany(P1, coins) and C1.active:
-        SCORE += 1
+        SCORE += C1.get_score()
+        A_SCORE += C1.get_score()
         C1.hide()
+        #Every 5 points speed up
+        if A_SCORE >= 5:
+            SPEED += 1
+            A_SCORE %= 5
 
     pygame.display.update()
     clock.tick(60)
